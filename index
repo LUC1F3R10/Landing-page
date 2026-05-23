@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VDT-101 Simulator — petroleum.sim</title>
+<meta name="description" content="محاكاة احترافية لبرج التقطير الفراغي · أداة تدريب لمهندسي البترول">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Tajawal:wght@300;400;500;700;800;900&family=Bebas+Neue&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --blue:    #00d4ff;
+  --blue-d:  #0099cc;
+  --yellow:  #ffd633;
+  --amber:   #ffaa00;
+  --green:   #2ecc71;
+  --red:     #e74c3c;
+  --purple:  #9b59b6;
+  --black:   #000000;
+  --dark:    #060e18;
+  --dark-2:  #0a1420;
+  --dark-3:  #0d1827;
+  --light:   #a8c4dd;
+  --light-2: #7a9ec2;
+  --white:   #ffffff;
+  --border:  rgba(0,212,255,0.15);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Tajawal', sans-serif;
+  background: var(--black);
+  color: var(--white);
+  line-height: 1.6;
+  overflow-x: hidden;
+  font-size: 16px;
+}
+
+/* ════════════════════════════
+   FIXED HEADER
+════════════════════════════ */
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  background: rgba(6,14,24,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  direction: ltr;
+}
+
+.logo {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.logo .at { color: var(--yellow); }
+.logo .pet { color: var(--blue); }
+.logo .dot { color: var(--yellow); }
+.logo .sim { color: var(--yellow); }
+
+nav { display: flex; gap: 24px; }
+nav a {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--light);
+  text-decoration: none;
+  letter-spacing: 1px;
+  transition: color 0.2s;
+}
+nav a:hover { color: var(--blue); }
+
+.cta-header {
+  background: var(--blue);
+  color: var(--black);
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.cta-header:hover {
+  background: var(--yellow);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  header { padding: 12px 16px; }
+  nav { display: none; }
+}
+
+/* ════════════════════════════
+   HERO SECTION
+════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding: 100px 32px 60px;
+  overflow: hidden;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+  background-size: 50px 50px;
+  z-index: 0;
+}
+
+.hero-glow-1 {
+  position: absolute;
+  top: -200px; right: -200px;
+  width: 800px; height: 800px;
+  background: radial-gradient(circle, rgba(0,212,255,0.15) 0%, transparent 70%);
+  z-index: 0;
+  pointer-events: none;
+  animation: pulse 8s ease-in-out infinite;
+}
+
+.hero-glow-2 {
+  position: absolute;
+  bottom: -300px; left: -150px;
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(255,214,51,0.08) 0%, transparent 70%);
+  z-index: 0;
+  pointer-events: none;
+  animation: pulse 10s ease-in-out infinite reverse;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+.scan-lines {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    to bottom, transparent, transparent 3px,
+    rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hero-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .hero-content { grid-template-columns: 1fr; gap: 40px; }
+}
+
+.hero-left {
+  text-align: right;
+}
+
+.tagline {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--blue);
+  letter-spacing: 4px;
+  padding: 8px 20px;
+  border: 1.5px solid rgba(0,212,255,0.3);
+  border-radius: 30px;
+  background: rgba(0,212,255,0.05);
+  margin-bottom: 24px;
+  direction: ltr;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+h1 {
+  font-family: 'Tajawal', sans-serif;
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 900;
+  line-height: 1.2;
+  margin-bottom: 24px;
+  letter-spacing: 0;
+  animation: fadeInUp 0.8s ease-out 0.1s both;
+}
+
+h1 .accent {
+  background: linear-gradient(120deg, var(--blue), var(--yellow));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+
+.hero-sub {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 22px;
+  color: var(--light);
+  line-height: 1.7;
+  margin-bottom: 36px;
+  max-width: 540px;
+  margin-right: 0;
+  margin-left: auto;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.stat {
+  background: rgba(13,24,39,0.6);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  backdrop-filter: blur(6px);
+}
+
+.stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 42px;
+  line-height: 1;
+  background: linear-gradient(180deg, var(--blue), var(--blue-d));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.stat-num.yellow {
+  background: linear-gradient(180deg, var(--yellow), var(--amber));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.stat-num.green {
+  background: linear-gradient(180deg, var(--green), #27ae60);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.stat-label {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 13px;
+  color: var(--light-2);
+  margin-top: 4px;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+.btn {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 16px 32px;
+  border-radius: 10px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.25s;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--blue);
+  color: var(--black);
+  box-shadow: 0 8px 24px rgba(0,212,255,0.3);
+}
+.btn-primary:hover {
+  background: var(--yellow);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(255,214,51,0.4);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--blue);
+  border-color: var(--blue);
+}
+.btn-secondary:hover {
+  background: rgba(0,212,255,0.1);
+  transform: translateY(-2px);
+}
+
+/* HERO RIGHT — Visual Preview */
+.hero-right {
+  position: relative;
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.preview-frame {
+  position: relative;
+  background: linear-gradient(180deg, var(--dark-3) 0%, var(--dark) 100%);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 60px rgba(0,212,255,0.1);
+  direction: ltr;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.preview-dot { width: 10px; height: 10px; border-radius: 50%; background: #e74c3c; }
+.preview-dot:nth-child(2) { background: #f39c12; }
+.preview-dot:nth-child(3) { background: #2ecc71; }
+.preview-title {
+  margin-left: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--light-2);
+  letter-spacing: 1px;
+}
+
+.preview-body {
+  position: relative;
+  height: 360px;
+  background: var(--dark);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SVG Mini P&ID */
+.mini-pid {
+  width: 100%; height: 100%;
+}
+
+@keyframes flow-dash {
+  to { stroke-dashoffset: -20; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.live-tag {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(231,76,60,0.15);
+  border: 1px solid rgba(231,76,60,0.4);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--red);
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-dot {
+  width: 6px; height: 6px;
+  background: var(--red);
+  border-radius: 50%;
+  animation: blink 1.2s ease-in-out infinite;
+}
+
+/* ════════════════════════════
+   SECTION COMMON
+════════════════════════════ */
+section {
+  padding: 100px 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.section-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.section-label {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 4px;
+  color: var(--yellow);
+  margin-bottom: 16px;
+  padding: 6px 16px;
+  border: 1px solid rgba(255,214,51,0.3);
+  border-radius: 20px;
+  background: rgba(255,214,51,0.05);
+  direction: ltr;
+}
+
+.section-title {
+  font-family: 'Tajawal', sans-serif;
+  font-size: clamp(32px, 4.5vw, 52px);
+  font-weight: 900;
+  line-height: 1.3;
+  margin-bottom: 20px;
+  text-align: right;
+}
+
+.section-sub {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 20px;
+  color: var(--light);
+  line-height: 1.7;
+  margin-bottom: 60px;
+  max-width: 720px;
+  text-align: right;
+}
+
+/* ════════════════════════════
+   FEATURES SECTION
+════════════════════════════ */
+.features-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 80% 20%, rgba(0,212,255,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(255,214,51,0.03) 0%, transparent 50%);
+  z-index: 0;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .features-grid { grid-template-columns: 1fr; }
+}
+
+.feature {
+  background: linear-gradient(180deg, rgba(13,24,39,0.6) 0%, rgba(10,20,32,0.3) 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  position: relative;
+  transition: all 0.3s;
+  overflow: hidden;
+}
+
+.feature:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0,212,255,0.4);
+  box-shadow: 0 16px 40px rgba(0,212,255,0.1);
+}
+
+.feature::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 60px; height: 60px;
+  background: var(--blue);
+  opacity: 0.05;
+  border-radius: 0 0 60px 0;
+  transition: all 0.3s;
+}
+
+.feature:hover::before {
+  opacity: 0.15;
+  width: 100px;
+  height: 100px;
+}
+
+.feature-icon {
+  font-size: 36px;
+  margin-bottom: 18px;
+  display: inline-block;
+  filter: grayscale(0);
+}
+
+.feature-num {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 56px;
+  color: rgba(255,255,255,0.05);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.feature-title {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  color: var(--white);
+}
+
+.feature-desc {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 15px;
+  color: var(--light);
+  line-height: 1.7;
+}
+
+/* ════════════════════════════
+   HIGHLIGHTS SECTION (dark band)
+════════════════════════════ */
+.highlights {
+  background: linear-gradient(180deg, var(--dark) 0%, #050a12 100%);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.highlights-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .highlights-grid { grid-template-columns: 1fr; }
+}
+
+.checklist {
+  list-style: none;
+  padding: 0;
+}
+
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px dashed rgba(168,196,221,0.15);
+  direction: rtl;
+}
+
+.checklist li:last-child { border-bottom: none; }
+
+.check-icon {
+  width: 36px; height: 36px;
+  background: rgba(46,204,113,0.12);
+  border: 1.5px solid var(--green);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+.check-text {
+  flex: 1;
+  text-align: right;
+}
+
+.check-title {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+
+.check-desc {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 14px;
+  color: var(--light-2);
+  line-height: 1.6;
+}
+
+/* Stats card */
+.big-stats-card {
+  background: linear-gradient(135deg, rgba(0,212,255,0.06) 0%, rgba(255,214,51,0.03) 100%);
+  border: 1.5px solid rgba(0,212,255,0.3);
+  border-radius: 20px;
+  padding: 40px;
+}
+
+.big-stat {
+  margin-bottom: 32px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+}
+
+.big-stat:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.big-stat-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--light-2);
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+  direction: ltr;
+}
+
+.big-stat-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 64px;
+  line-height: 1;
+  background: linear-gradient(180deg, var(--blue), var(--blue-d));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  direction: ltr;
+  margin-bottom: 6px;
+}
+
+.big-stat-value.yellow {
+  background: linear-gradient(180deg, var(--yellow), var(--amber));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.big-stat-desc {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 16px;
+  color: var(--light);
+}
+
+/* ════════════════════════════
+   SCENARIOS SECTION
+════════════════════════════ */
+.scenarios-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .scenarios-grid { grid-template-columns: 1fr; }
+}
+
+.scenario {
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  direction: rtl;
+  transition: all 0.3s;
+}
+
+.scenario:hover {
+  border-color: rgba(0,212,255,0.4);
+  transform: translateX(-4px);
+}
+
+.scenario-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px;
+  line-height: 1;
+  color: var(--blue);
+  min-width: 70px;
+  text-align: center;
+  border-left: 2px solid rgba(0,212,255,0.2);
+  padding-left: 16px;
+}
+
+.scenario-body { flex: 1; text-align: right; }
+
+.scenario-title {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.scenario-tag {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  direction: ltr;
+}
+
+.scenario-tag.basic { background: rgba(46,204,113,0.15); color: var(--green); }
+.scenario-tag.intermediate { background: rgba(255,214,51,0.12); color: var(--yellow); }
+.scenario-tag.advanced { background: rgba(155,89,182,0.15); color: var(--purple); }
+.scenario-tag.critical { background: rgba(231,76,60,0.15); color: var(--red); }
+
+.scenario-desc {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 15px;
+  color: var(--light);
+  line-height: 1.6;
+}
+
+/* ════════════════════════════
+   FOR-WHO SECTION
+════════════════════════════ */
+.who-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .who-grid { grid-template-columns: 1fr; }
+}
+
+.who-card {
+  text-align: center;
+  padding: 36px 28px;
+  background: linear-gradient(180deg, rgba(13,24,39,0.4), rgba(10,20,32,0.2));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  transition: all 0.3s;
+}
+
+.who-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(255,214,51,0.3);
+}
+
+.who-icon {
+  font-size: 52px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.who-title {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: var(--yellow);
+}
+
+.who-desc {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 15px;
+  color: var(--light);
+  line-height: 1.7;
+}
+
+/* ════════════════════════════
+   CTA / CONTACT SECTION
+════════════════════════════ */
+.contact-section {
+  background: linear-gradient(180deg, #050a12 0%, var(--black) 100%);
+  border-top: 1px solid var(--border);
+  position: relative;
+}
+
+.contact-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(0,212,255,0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.contact-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.contact-content .section-label {
+  display: inline-block;
+  margin-bottom: 24px;
+}
+
+.contact-content h2 {
+  font-family: 'Tajawal', sans-serif;
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 900;
+  line-height: 1.3;
+  margin-bottom: 24px;
+}
+
+.contact-content .lead {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 20px;
+  color: var(--light);
+  line-height: 1.7;
+  margin-bottom: 48px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  max-width: 700px;
+  margin: 0 auto 32px;
+}
+
+@media (max-width: 600px) {
+  .contact-grid { grid-template-columns: 1fr; }
+}
+
+.contact-card {
+  background: linear-gradient(180deg, var(--dark-3), var(--dark-2));
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  text-decoration: none;
+  color: var(--white);
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  text-align: right;
+}
+
+.contact-card:hover {
+  border-color: var(--blue);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0,212,255,0.15);
+}
+
+.contact-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: rgba(0,212,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.contact-card.whatsapp .contact-icon { background: rgba(46,204,113,0.12); }
+.contact-card.email .contact-icon { background: rgba(255,214,51,0.12); }
+
+.contact-info { flex: 1; }
+
+.contact-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--light-2);
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+  text-align: right;
+  direction: ltr;
+}
+
+.contact-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--white);
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.contact-card.whatsapp .contact-value { color: var(--green); }
+.contact-card.email .contact-value { color: var(--yellow); }
+
+.contact-note {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 15px;
+  color: var(--light-2);
+  margin-top: 20px;
+}
+
+/* ════════════════════════════
+   FOOTER
+════════════════════════════ */
+footer {
+  padding: 40px 32px 30px;
+  border-top: 1px solid var(--border);
+  background: var(--black);
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.footer-brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+  direction: ltr;
+}
+
+.footer-copy {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--light-2);
+  letter-spacing: 1px;
+  direction: ltr;
+}
+
+.footer-credit {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--light-2);
+  text-align: center;
+  margin-top: 12px;
+  letter-spacing: 1px;
+  direction: ltr;
+}
+
+@media (max-width: 700px) {
+  .footer-content { flex-direction: column; text-align: center; }
+}
+
+/* Corner brackets — signature visual */
+.corner-brackets {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+.corner-brackets.tl { top: 90px; right: 24px; width: 30px; height: 30px; border-top: 2px solid rgba(0,212,255,0.4); border-right: 2px solid rgba(0,212,255,0.4); }
+.corner-brackets.tr { top: 90px; left: 24px; width: 30px; height: 30px; border-top: 2px solid rgba(0,212,255,0.4); border-left: 2px solid rgba(0,212,255,0.4); }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════
+     HEADER (FIXED)
+════════════════════════════ -->
+<header>
+  <div class="logo">
+    <span class="at">@</span><span class="pet">petroleum</span><span class="dot">.</span><span class="sim">sim</span>
+  </div>
+  <nav>
+    <a href="#features">FEATURES</a>
+    <a href="#scenarios">SCENARIOS</a>
+    <a href="#who">FOR WHO</a>
+    <a href="#contact">CONTACT</a>
+  </nav>
+  <a href="#contact" class="cta-header">TRY DEMO</a>
+</header>
+
+<!-- ════════════════════════════
+     HERO
+════════════════════════════ -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-glow-1"></div>
+  <div class="hero-glow-2"></div>
+  <div class="scan-lines"></div>
+  <div class="corner-brackets tl"></div>
+  <div class="corner-brackets tr"></div>
+
+  <div class="hero-content">
+    <div class="hero-left">
+      <div class="tagline">PETROLEUM ENGINEERING SIMULATIONS</div>
+      <h1>
+        محاكاة برج التقطير<br>
+        <span class="accent">الفراغي VDT-101</span>
+      </h1>
+      <p class="hero-sub">
+        أداة تدريب احترافية لمهندسي البترول · تتعلم من المتصفح مباشرة بدون أي تثبيت · فيزياء واقعية مبنية على ١٢ مصدر علمي معتمد
+      </p>
+
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-num">9</div>
+          <div class="stat-label">أقسام تفاعلية</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num yellow">42+</div>
+          <div class="stat-label">عطل تشغيلي</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num green">100%</div>
+          <div class="stat-label">بدون تثبيت</div>
+        </div>
+      </div>
+
+      <div class="hero-cta">
+        <a href="#contact" class="btn btn-primary">
+          🚀 جرّب العرض المجاني
+        </a>
+        <a href="#features" class="btn btn-secondary">
+          المميزات ↓
+        </a>
+      </div>
+    </div>
+
+    <!-- Hero Right: Mini P&ID preview -->
+    <div class="hero-right">
+      <div class="preview-frame">
+        <div class="preview-header">
+          <span class="preview-dot"></span>
+          <span class="preview-dot"></span>
+          <span class="preview-dot"></span>
+          <span class="preview-title">VDT-101 SIMULATOR · LIVE</span>
+        </div>
+        <div class="preview-body">
+          <div class="live-tag">
+            <span class="live-dot"></span>
+            <span>LIVE</span>
+          </div>
+
+          <!-- Mini animated P&ID SVG -->
+          <svg class="mini-pid" viewBox="0 0 500 360" xmlns="http://www.w3.org/2000/svg">
+            <!-- Grid -->
+            <defs>
+              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(0,212,255,0.04)" stroke-width="0.5"/>
+              </pattern>
+              <linearGradient id="towerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.1"/>
+                <stop offset="100%" stop-color="#00d4ff" stop-opacity="0.02"/>
+              </linearGradient>
+              <linearGradient id="furnGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffaa00" stop-opacity="0.2"/>
+                <stop offset="100%" stop-color="#ff5722" stop-opacity="0.1"/>
+              </linearGradient>
+            </defs>
+            <rect width="500" height="360" fill="url(#grid)"/>
+
+            <!-- Furnace -->
+            <rect x="60" y="180" width="80" height="120" rx="6" fill="url(#furnGrad)" stroke="#ffaa00" stroke-width="1.5"/>
+            <text x="100" y="155" font-family="IBM Plex Mono" font-size="10" fill="#ffaa00" text-anchor="middle" font-weight="700">FURNACE</text>
+            <text x="100" y="245" font-family="Bebas Neue" font-size="22" fill="#ffd633" text-anchor="middle">405°C</text>
+            <text x="100" y="265" font-family="IBM Plex Mono" font-size="9" fill="#ffaa00" text-anchor="middle">COT</text>
+
+            <!-- Flame effect -->
+            <circle cx="100" cy="290" r="8" fill="#ff5722" opacity="0.6">
+              <animate attributeName="opacity" values="0.4;0.9;0.4" dur="1.5s" repeatCount="indefinite"/>
+              <animate attributeName="r" values="6;10;6" dur="1.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="92" cy="290" r="5" fill="#ffaa00" opacity="0.7">
+              <animate attributeName="opacity" values="0.5;1;0.5" dur="1.2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="108" cy="290" r="5" fill="#ffaa00" opacity="0.7">
+              <animate attributeName="opacity" values="1;0.5;1" dur="1.3s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- Transfer Line -->
+            <line x1="140" y1="220" x2="220" y2="220" stroke="#ffaa00" stroke-width="3" stroke-dasharray="6,3">
+              <animate attributeName="stroke-dashoffset" from="0" to="-18" dur="0.8s" repeatCount="indefinite"/>
+            </line>
+
+            <!-- Tower -->
+            <rect x="220" y="50" width="100" height="250" rx="8" fill="url(#towerGrad)" stroke="#00d4ff" stroke-width="2"/>
+            <text x="270" y="35" font-family="IBM Plex Mono" font-size="11" fill="#00d4ff" text-anchor="middle" font-weight="700">VDT-101</text>
+
+            <!-- Tower trays -->
+            <line x1="225" y1="90" x2="315" y2="90" stroke="rgba(0,212,255,0.3)" stroke-width="0.5" stroke-dasharray="3,2"/>
+            <line x1="225" y1="120" x2="315" y2="120" stroke="rgba(0,212,255,0.3)" stroke-width="0.5" stroke-dasharray="3,2"/>
+            <line x1="225" y1="150" x2="315" y2="150" stroke="rgba(0,212,255,0.3)" stroke-width="0.5" stroke-dasharray="3,2"/>
+            <line x1="225" y1="180" x2="315" y2="180" stroke="rgba(0,212,255,0.3)" stroke-width="0.5" stroke-dasharray="3,2"/>
+            <line x1="225" y1="210" x2="315" y2="210" stroke="rgba(0,212,255,0.3)" stroke-width="0.5" stroke-dasharray="3,2"/>
+            <line x1="225" y1="240" x2="315" y2="240" stroke="rgba(0,212,255,0.3)" stroke-width="0.5" stroke-dasharray="3,2"/>
+
+            <!-- Vacuum reading -->
+            <text x="270" y="75" font-family="Bebas Neue" font-size="16" fill="#00d4ff" text-anchor="middle">75°C</text>
+            <text x="270" y="285" font-family="Bebas Neue" font-size="14" fill="#ff8c42" text-anchor="middle">−0.95 bar</text>
+
+            <!-- Product draws -->
+            <line x1="320" y1="110" x2="380" y2="110" stroke="#7ecf3a" stroke-width="2" stroke-dasharray="5,2">
+              <animate attributeName="stroke-dashoffset" from="0" to="-14" dur="1.2s" repeatCount="indefinite"/>
+            </line>
+            <text x="385" y="108" font-family="IBM Plex Mono" font-size="9" fill="#7ecf3a" font-weight="700">LVGO</text>
+            <text x="385" y="120" font-family="Bebas Neue" font-size="13" fill="#7ecf3a">7,400</text>
+
+            <line x1="320" y1="170" x2="380" y2="170" stroke="#65d9c8" stroke-width="2" stroke-dasharray="5,2">
+              <animate attributeName="stroke-dashoffset" from="0" to="-14" dur="1.0s" repeatCount="indefinite"/>
+            </line>
+            <text x="385" y="168" font-family="IBM Plex Mono" font-size="9" fill="#65d9c8" font-weight="700">HVGO</text>
+            <text x="385" y="180" font-family="Bebas Neue" font-size="13" fill="#65d9c8">10,500</text>
+
+            <line x1="320" y1="230" x2="380" y2="230" stroke="#ffaa00" stroke-width="2" stroke-dasharray="5,2">
+              <animate attributeName="stroke-dashoffset" from="0" to="-14" dur="1.4s" repeatCount="indefinite"/>
+            </line>
+            <text x="385" y="228" font-family="IBM Plex Mono" font-size="9" fill="#ffaa00" font-weight="700">SLOP</text>
+            <text x="385" y="240" font-family="Bebas Neue" font-size="13" fill="#ffaa00">3,000</text>
+
+            <!-- Residue -->
+            <line x1="270" y1="300" x2="270" y2="340" stroke="#ff8c42" stroke-width="3" stroke-dasharray="5,2">
+              <animate attributeName="stroke-dashoffset" from="0" to="-14" dur="1.1s" repeatCount="indefinite"/>
+            </line>
+            <text x="270" y="355" font-family="IBM Plex Mono" font-size="9" fill="#ff8c42" font-weight="700" text-anchor="middle">VACUUM RES</text>
+
+            <!-- Feed Pump -->
+            <circle cx="30" cy="240" r="14" fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.5"/>
+            <text x="30" y="244" font-family="IBM Plex Mono" font-size="7" fill="#00d4ff" text-anchor="middle" font-weight="700">P-100</text>
+            <line x1="44" y1="240" x2="60" y2="240" stroke="#00d4ff" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════
+     FEATURES SECTION
+════════════════════════════ -->
+<section id="features">
+  <div class="features-bg"></div>
+  <div class="section-inner">
+    <div class="section-label">FEATURES · المميزات</div>
+    <h2 class="section-title">
+      كل ما يحتاجه المهندس<br>في مكان واحد
+    </h2>
+    <p class="section-sub">
+      محاكاة متكاملة تجمع P&ID تفاعلي، فيزياء واقعية، ٢٤+ عطل قابل للحقن، وسيناريوهات تدريب متنوعة
+    </p>
+
+    <div class="features-grid">
+      <div class="feature">
+        <div class="feature-num">01</div>
+        <div class="feature-icon">🏭</div>
+        <h3 class="feature-title">P&ID تفاعلي كامل</h3>
+        <p class="feature-desc">رسم تخطيطي صناعي يحتوي على الفرن، البرج الفراغي، شبكة المبادلات الحرارية، نظام التفريغ، وكل المضخات الرئيسية</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">02</div>
+        <div class="feature-icon">🌡️</div>
+        <h3 class="feature-title">فيزياء واقعية معتمدة</h3>
+        <p class="feature-desc">كل القيم الحرارية والضغوط مبنية على ١٢ مصدر علمي يشمل دراسات على مصفاة البصرة ومعايير Sulzer و ASTM</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">03</div>
+        <div class="feature-icon">⚡</div>
+        <h3 class="feature-title">حقن أعطال فورية</h3>
+        <p class="feature-desc">٢٤+ عطل تشغيلي قابل للحقن مع شرح كامل للأعراض والتأثيرات وخطوات الحل وفق ممارسات الصناعة</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">04</div>
+        <div class="feature-icon">📊</div>
+        <h3 class="feature-title">Trends و Flowmeters حية</h3>
+        <p class="feature-desc">قياسات تدفق المنتجات بنمط DCS صناعي، إحصائيات Min/Max/Avg، وتاريخ ١٢٠ ثانية لكل متغير</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">05</div>
+        <div class="feature-icon">🎯</div>
+        <h3 class="feature-title">نظام تقييم متكامل</h3>
+        <p class="feature-desc">٥ معايير صناعية لتقييم أداء المتدرب: الجودة، الأمان، الكفاءة، الاستقرار، وسرعة الاستجابة</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">06</div>
+        <div class="feature-icon">🌐</div>
+        <h3 class="feature-title">يعمل من المتصفح</h3>
+        <p class="feature-desc">لا يحتاج تثبيت أو إعدادات معقدة، يفتح في أي متصفح حديث على الكمبيوتر أو الجهاز اللوحي بدون قيود</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════
+     HIGHLIGHTS BAND
+════════════════════════════ -->
+<section class="highlights">
+  <div class="section-inner">
+    <div class="section-label">WHY IT MATTERS · لماذا تختارها</div>
+    <h2 class="section-title">
+      تدريب احترافي<br>بتكلفة محدودة
+    </h2>
+    <p class="section-sub">
+      بدل تدريب الميدان عالي التكلفة والمخاطر، المتدرب يتعلم على نفس البيئة بدون أي ضرر محتمل
+    </p>
+
+    <div class="highlights-grid">
+      <ul class="checklist">
+        <li>
+          <div class="check-icon">✓</div>
+          <div class="check-text">
+            <div class="check-title">تعلم بلا مخاطر فعلية</div>
+            <div class="check-desc">المتدرب يجرب أعطالاً خطيرة دون تأثير على الإنتاج أو سلامة الأفراد</div>
+          </div>
+        </li>
+        <li>
+          <div class="check-icon">✓</div>
+          <div class="check-text">
+            <div class="check-title">سيناريوهات تشغيل كاملة</div>
+            <div class="check-desc">من التشغيل البارد إلى الإيقاف، مع كل المراحل التفصيلية</div>
+          </div>
+        </li>
+        <li>
+          <div class="check-icon">✓</div>
+          <div class="check-text">
+            <div class="check-title">قاعدة معرفية موثقة</div>
+            <div class="check-desc">تقرير فني بـ ١٢ مصدر علمي يدعم كل قيمة في المحاكاة</div>
+          </div>
+        </li>
+        <li>
+          <div class="check-icon">✓</div>
+          <div class="check-text">
+            <div class="check-title">واجهة عربية وإنجليزية</div>
+            <div class="check-desc">تسميات تقنية بالإنجليزية مع شرح تفصيلي بالعربية للفهم الكامل</div>
+          </div>
+        </li>
+        <li>
+          <div class="check-icon">✓</div>
+          <div class="check-text">
+            <div class="check-title">مصمم وفق الممارسة العراقية</div>
+            <div class="check-desc">القيم والإجراءات تتطابق مع تشغيل مصافي العراق والشرق الأوسط</div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="big-stats-card">
+        <div class="big-stat">
+          <div class="big-stat-label">SCIENTIFIC REFERENCES</div>
+          <div class="big-stat-value">12</div>
+          <div class="big-stat-desc">مصدر علمي يدعم كل القيم الحرارية والضغوط</div>
+        </div>
+        <div class="big-stat">
+          <div class="big-stat-label">TEMPERATURE POINTS</div>
+          <div class="big-stat-value yellow">18</div>
+          <div class="big-stat-desc">مؤشر حراري حي ومتطابق مع الواقع الصناعي</div>
+        </div>
+        <div class="big-stat">
+          <div class="big-stat-label">FAULT SCENARIOS</div>
+          <div class="big-stat-value">24+</div>
+          <div class="big-stat-desc">عطل صناعي قابل للحقن مع شرح وحلول</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════
+     SCENARIOS
+════════════════════════════ -->
+<section id="scenarios">
+  <div class="section-inner">
+    <div class="section-label">SCENARIOS · سيناريوهات التدريب</div>
+    <h2 class="section-title">
+      مواقف حقيقية<br>من الميدان
+    </h2>
+    <p class="section-sub">
+      سيناريوهات تشغيلية متنوعة تغطي الأوضاع الطبيعية والطارئة في وحدة التقطير الفراغي
+    </p>
+
+    <div class="scenarios-grid">
+      <div class="scenario">
+        <div class="scenario-num">01</div>
+        <div class="scenario-body">
+          <span class="scenario-tag advanced">ADVANCED · 15 MIN</span>
+          <h3 class="scenario-title">التشغيل البارد</h3>
+          <p class="scenario-desc">من حرارة الجو إلى الإنتاج المستقر · تدوير Feed بارد · تسخين تدريجي · سحب الفاكيوم وبدء المنتجات</p>
+        </div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-num">02</div>
+        <div class="scenario-body">
+          <span class="scenario-tag intermediate">INTERMEDIATE · 10 MIN</span>
+          <h3 class="scenario-title">الإيقاف العادي</h3>
+          <p class="scenario-desc">خفض تدريجي للتغذية والحرارة · إيقاف نظام التفريغ بالترتيب الصحيح · إفراغ آمن</p>
+        </div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-num">03</div>
+        <div class="scenario-body">
+          <span class="scenario-tag critical">CRITICAL · 8 MIN</span>
+          <h3 class="scenario-title">انفجار الفرن</h3>
+          <p class="scenario-desc">تسرّب في أحد أنابيب الفرن · يجب التشخيص السريع وحماية الوحدة من التصعيد</p>
+        </div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-num">04</div>
+        <div class="scenario-body">
+          <span class="scenario-tag critical">CRITICAL · 10 MIN</span>
+          <h3 class="scenario-title">فقدان الفاكيوم</h3>
+          <p class="scenario-desc">عطل في الـ Ejectors أو تسريب · الضغط يرتفع · حماية البرج من التصعيد</p>
+        </div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-num">05</div>
+        <div class="scenario-body">
+          <span class="scenario-tag intermediate">INTERMEDIATE · 6 MIN</span>
+          <h3 class="scenario-title">Cavitation في المضخة</h3>
+          <p class="scenario-desc">انخفاض ضغط الشفط · المضخة تهتز · يجب تشخيص NPSH وتحويل المضخة الاحتياطية</p>
+        </div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-num">06</div>
+        <div class="scenario-body">
+          <span class="scenario-tag basic">BASIC · 5 MIN</span>
+          <h3 class="scenario-title">انحراف جودة المنتج</h3>
+          <p class="scenario-desc">مواصفات HVGO خارج النطاق · تشخيص السبب وضبط المتغيرات للعودة للحالة الطبيعية</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════
+     FOR WHO
+════════════════════════════ -->
+<section id="who" class="highlights">
+  <div class="section-inner">
+    <div class="section-label">FOR WHO · لمن هذه المحاكاة</div>
+    <h2 class="section-title">
+      مهندسون · شركات · جامعات
+    </h2>
+    <p class="section-sub">
+      مصممة لكل من يعمل أو يدرس في مجال هندسة البترول والتكرير
+    </p>
+
+    <div class="who-grid">
+      <div class="who-card">
+        <span class="who-icon">👨‍🔧</span>
+        <h3 class="who-title">المهندسون الجدد</h3>
+        <p class="who-desc">للذين يريدون فهم وحدة VDT قبل الدخول للميدان · بناء الحدس التشغيلي الصحيح</p>
+      </div>
+
+      <div class="who-card">
+        <span class="who-icon">🏭</span>
+        <h3 class="who-title">المصافي والشركات</h3>
+        <p class="who-desc">أداة تدريب اقتصادية لتأهيل المشغلين قبل التشغيل الفعلي · بدون تكاليف ميدانية</p>
+      </div>
+
+      <div class="who-card">
+        <span class="who-icon">🎓</span>
+        <h3 class="who-title">الجامعات والمعاهد</h3>
+        <p class="who-desc">مرجع تعليمي تفاعلي يربط النظرية بالتطبيق · مناسب لمواد التكرير والتقطير</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════
+     CONTACT / CTA
+════════════════════════════ -->
+<section id="contact" class="contact-section">
+  <div class="section-inner">
+    <div class="contact-content">
+      <div class="section-label">GET IN TOUCH · للتواصل</div>
+      <h2>
+        جرّب العرض التوضيحي<br>
+        <span style="color:var(--blue);">مجاناً اليوم</span>
+      </h2>
+      <p class="lead">
+        تواصل معنا على واتساب أو الإيميل لطلب العرض التجريبي · رد سريع خلال ٢٤ ساعة
+      </p>
+
+      <div class="contact-grid">
+        <a href="https://wa.me/9647838567673" target="_blank" class="contact-card whatsapp">
+          <div class="contact-icon">💬</div>
+          <div class="contact-info">
+            <div class="contact-label">WHATSAPP</div>
+            <div class="contact-value">+964 783 856 7673</div>
+          </div>
+        </a>
+
+        <a href="mailto:sb2.0ork@gmail.com" class="contact-card email">
+          <div class="contact-icon">📧</div>
+          <div class="contact-info">
+            <div class="contact-label">EMAIL</div>
+            <div class="contact-value">sb2.0ork@gmail.com</div>
+          </div>
+        </a>
+      </div>
+
+      <p class="contact-note">
+        نقدم العرض التجريبي مجاناً للمهتمين الجادين · سرّية تامة لطلباتكم
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════
+     FOOTER
+════════════════════════════ -->
+<footer>
+  <div class="footer-content">
+    <div class="footer-brand">
+      <span style="color:#ffd633;">@</span><span style="color:#00d4ff;">petroleum</span><span style="color:#ffd633;">.sim</span>
+    </div>
+    <div class="footer-copy">© 2026 · ALL RIGHTS RESERVED · VDT-101 SIMULATOR</div>
+  </div>
+  <div class="footer-credit">
+    Designed &amp; Developed by Mustafa Naji Abdullah
+  </div>
+</footer>
+
+<script>
+// Smooth fade-in for sections on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.feature, .scenario, .who-card, .checklist li').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+  observer.observe(el);
+});
+
+// Smooth scroll for nav links
+document.querySelectorAll('a[href^="#"]').forEach(link => {
+  link.addEventListener('click', function(e) {
+    const target = document.querySelector(this.getAttribute('href'));
+    if(target) {
+      e.preventDefault();
+      window.scrollTo({
+        top: target.offsetTop - 70,
+        behavior: 'smooth'
+      });
+    }
+  });
+});
+</script>
+
+</body>
+</html>
